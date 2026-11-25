@@ -1,0 +1,6 @@
+image_manifest_digest=sha256:1812f46cdac0a4763b59fe067962c956b3ccf1ea0098939fc39c9ffdd9e809f1
+config_digest=sha256:deabdd1c66c86b5681a3e7a82f86c2bf30f50f4dee000ef7eab01c16106f4831
+tag=readystack/portainer:2.45.4-CE-ubuntu24.04-r1
+probe_port=9000
+probe_path=/api/status
+probe_timeout=180

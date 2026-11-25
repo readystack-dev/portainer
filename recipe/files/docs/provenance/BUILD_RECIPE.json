@@ -1,0 +1,80 @@
+{
+  "schema": "kitforge.build_recipe.v1",
+  "slug": "portainer",
+  "image": "readystack/portainer:2.45.4-CE-ubuntu24.04-r1",
+  "build_method": "source-rebuild-go",
+  "source": {
+    "repo": "https://github.com/portainer/portainer",
+    "ref": "2.45.4",
+    "builder_image": "golang:1.26.11-bookworm",
+    "go_module_root": "github.com/portainer/portainer",
+    "go_version_required": "1.26.10",
+    "_builder_note_2026_10_10": "1.26.6 -> 1.26.9 (both builder images): the Go security release of 2026-10-08 fixes GO-2026-6599/6600/6603/6604/6605/6607/6608/6609/6610/6611/6612/6613/6617 in the standard library (net/http, crypto/tls, html/template, mime/multipart, net/textproto, os) at go1.26.9; govulncheck reported them against the 1.26.6 build on 2026-10-09 (Scout had not listed them yet). Index digest sha256:d9c68c2c51161e12fd77e4c6320687c9cd86e1af1e3ad6e6cd63ff970641453c is added to BASE_IMAGE_DIGESTS.lock in the same patch.",
+    "multi_module": false,
+    "git_sha": "90a3374c",
+    "_version_note": "v2.39.4 is the LATEST Portainer CE GA (queue-latest-version policy; git tag `2.39.4`, NO `v` prefix - LIVE-VERIFIED `git clone --depth 1 --branch 2.39.4`, HEAD sha 90a3374c). SINGLE Go module github.com/portainer/portainer (go.mod at repo ROOT; NO go.work, NO sub-modules - confirmed `ls go.work*` => none). The server binary builds from the repo root by package path `./api/cmd/portainer` (Go walks up to the root go.mod; upstream build_binary.sh does the equivalent `cd api && go build ./cmd/portainer`). go.mod directive is `go 1.25.11`; builder golang:1.26-bookworm ships go1.26.4 (>= 1.25.11) so GOTOOLCHAIN=local compiles with ZERO toolchain download - matches the --network=none offline promise (building against the newer 1.26 stdlib is the dominant stale-stdlib CVE remediation). One in-tree replace directive `github.com/robfig/cron/v3 => v3.0.1` (self-pin) - go mod vendor handles it, NO mod_replaces needed. liblicense is NOT a go.mod dependency (the upstream build_binary.sh -X github.com/portainer/liblicense.LicenseServerBaseURL is a no-op against a non-linked package); our minimal `-s -w` build links NO license-server client - clean CE.",
+    "build_env": {
+      "CGO_ENABLED": "0",
+      "GOOS": "linux",
+      "GOARCH": "amd64",
+      "GOTOOLCHAIN": "local",
+      "GOFLAGS": "-buildvcs=false",
+      "GOWORK": "off"
+    },
+    "vendor_build": {
+      "tooling": [
+        "nodejs",
+        "pnpm"
+      ],
+      "node_version": "22",
+      "cmds": [
+        "export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 NODE_OPTIONS=--max-old-space-size=6144 NODE_ENV=production",
+        "corepack enable",
+        "pnpm install",
+        "pnpm run build --config webpack/webpack.production.js",
+        "test -f dist/public/index.html && echo 'portainer frontend build present'"
+      ],
+      "_note": "FILESYSTEM-asset materialization (NOT a go:embed - there is ZERO go:embed in api/ or pkg/). The backend `go build ./api/cmd/portainer` needs NO frontend to compile (LIVE-VERIFIED: a plain backend build with zero vendor_build produced a working binary that booted + served /api/status), but the SERVED UI lives on disk at <assets>/public and must be built. vendor_build runs the upstream client build in the online govendor stage BEFORE `go mod vendor`: (1) export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 stops corepack (bundled with nodesource node 22) from blocking on a y/N download-confirmation prompt for pnpm@10.26.2 in a non-TTY build; NODE_OPTIONS caps the V8 heap so the webpack production pass does not blow past <redacted: internal host> RAM+swap; NODE_ENV=production matches the Makefile build-client target. (2) `corepack enable` activates pnpm@10.26.2 from package.json `packageManager`; pnpm first downloads the declared pnpm.configDependencies plugin (@pnpm/plugin-types-fixer) from the registry (online vendor stage - fine). (3) `pnpm install` (PLAIN - matches the upstream Makefile `client-deps: pnpm install`, mutable lockfile). DO NOT use `--frozen-lockfile` and DO NOT set CI=true: under CI=true pnpm defaults to frozen-lockfile and portainer 2.39.4 then FAILS with ERR_PNPM_LOCKFILE_CONFIG_MISMATCH (the lockfile's pnpmfileChecksum does not match what pnpm@10.26.2 recomputes after installing the configDependency) - LIVE-VERIFIED on <redacted: internal host>; plain `pnpm install` resolves it. (4) `pnpm run build --config webpack/webpack.production.js` = Makefile `build-client` = the production webpack pass (pnpm run puts node_modules/.bin on PATH so `webpack` resolves), emitting dist/public/ (the bundle + index.html that the Go file handler serves). node_version 22 == package.json engines `node: ^22`; tooling [nodejs,pnpm] triggers render_l009_kit's nodesource setup_22.x install + corepack enable. After this, render runs `go get <dep_bumps> && go mod tidy -e && go mod vendor && rm -f go.work go.work.sum && rm -rf .git node_modules`; dist/ (incl. dist/public) and mustache-templates/ are main-module non-Go dirs that `go mod vendor` does NOT touch and the `rm -rf node_modules` does NOT remove, so they survive into the offline build stage's /src and are COPY'd forward via offline_stage_copies. The offline `go build` then needs zero network. LIVE-VERIFIED on <redacted: internal host> (node:22-bookworm): plain `pnpm install` + webpack production -> dist/public/index.html present.",
+      "node_dist": {
+        "version": "22.23.5",
+        "sha256": "c54118104acc524633b5abe106bbf44a53126ec8b4e5fa105cb92b5d7de8a1a1"
+      }
+    },
+    "source_date_epoch": 1795071769,
+    "source_date_epoch_provenance": "the time release 2.45.4-CE-ubuntu24.04-r1 was cut (2026-11-19T07:02:49Z), by scripts/retarget.py: ReadyStack dates an image by when its release was packaged (owner 2026-11-10), recorded here once and used by every rebuild of the release; it builds upstream commit 505380c8eecf, dated 2026-11-18T20:12:55Z (source.commit_epoch).",
+    "commit": "505380c8eecff08cf513c457494bde91634db9ff",
+    "source_date_epoch_basis": "release-cut",
+    "commit_epoch": 1795032775
+  },
+  "binaries_from_source": [
+    {
+      "name": "portainer",
+      "main_pkg": "./api/cmd/portainer",
+      "cgo_enabled": 0,
+      "build_tags": [],
+      "build_flags": [
+        "-trimpath"
+      ],
+      "ldflags": "-s -w",
+      "out_path": "/usr/local/bin/portainer",
+      "verify_subcmd": "--version",
+      "_note": "Single static binary - the Portainer CE server (UI + REST API + Edge tunnel + embedded bbolt store, all in one process). main_pkg ./api/cmd/portainer (api/cmd/portainer/main.go has main). CGO_ENABLED=0 -> static stripped ELF (bbolt is pure-Go; upstream build_binary.sh is `CGO_ENABLED=0 go build -trimpath --installsuffix cgo ./cmd/portainer` - we drop the legacy --installsuffix cgo, keep -trimpath which render adds). NO build tags (upstream default build is tag-less). LDFLAGS = just `-s -w` (strip): the API/UI VERSION is the hardcoded constant APIVersion=\"2.39.4\" in api/portainer.go, NOT an ldflags var, so NO -X version stamp is needed - LIVE-VERIFIED `portainer --version` => 2.39.4 and GET /api/status => {\"Version\":\"2.39.4\",...} with a plain `-s -w` build. (The upstream -X pkg/build.* stamps only populate the cosmetic 'About' build-info panel from git/node/pnpm metadata the --depth-1 .git-stripped offline tree lacks; they are non-load-bearing and intentionally omitted.) out_path /usr/local/bin/portainer (on PATH). verify_subcmd `--version` (kingpin.Version, double dash). LIVE: 98MB (98,468,002 bytes) static stripped ELF on <redacted: internal host> golang:1.26-bookworm, exit 0."
+    }
+  ],
+  "runtime_packages": [
+    "base-files",
+    "base-passwd",
+    "ca-certificates",
+    "coreutils",
+    "dash",
+    "libc6",
+    "libssl3t64",
+    "openssl",
+    "tzdata"
+  ],
+  "runtime_base": {
+    "kind": "chisel",
+    "shell": true,
+    "packages": "vendored/chisel/packages.tsv"
+  }
+}

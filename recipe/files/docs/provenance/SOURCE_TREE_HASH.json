@@ -1,0 +1,9 @@
+{
+  "schema": "kitforge.source_tree_hash.v1",
+  "slug": "portainer",
+  "repo": "https://github.com/portainer/portainer",
+  "ref": "2.45.4",
+  "commit": "505380c8eecff08cf513c457494bde91634db9ff",
+  "tree_listing_sha256": "b47db3d979f9f46e9c34be1ff42a9c1ba65a4502c5ecb137dd0869949e40acae",
+  "file_count": 5417
+}

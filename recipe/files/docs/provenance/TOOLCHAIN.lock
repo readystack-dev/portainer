@@ -1,0 +1,144 @@
+{
+  "apt_refresh": [],
+  "binaries_from_component_images": [],
+  "binaries_from_source": [
+    {
+      "build_flags": [
+        "-trimpath"
+      ],
+      "build_tags": [],
+      "cgo_enabled": 0,
+      "ldflags": "-s -w",
+      "main_pkg": "./api/cmd/portainer",
+      "name": "portainer",
+      "out_path": "/usr/local/bin/portainer",
+      "verify_subcmd": "--version"
+    }
+  ],
+  "build_method": "source-rebuild-go",
+  "chain_id": 1117,
+  "dep_bumps": [
+    {
+      "module": "golang.org/x/crypto",
+      "to": "v0.56.0",
+      "why": "chain 392 fresh-verdict auto-applicable (2026-09-13); pristine-baseline drive named exactly these"
+    },
+    {
+      "module": "golang.org/x/mod",
+      "to": "v0.40.0",
+      "why": "chain 392 fresh-verdict auto-applicable (2026-09-13); pristine-baseline drive named exactly these"
+    },
+    {
+      "module": "google.golang.org/grpc",
+      "to": "v1.83.2",
+      "why": "chain verdict bump; RAISED to v1.83.2 \u2014 v1.83.1 itself is in the CVE-2026-84445 window (>=1.83.0,<1.83.2, HIGH improper array index validation)"
+    },
+    {
+      "module": "golang.org/x/net",
+      "to": "v0.62.0",
+      "why": "CVE-2026-78661 / GO-2026-6860 (HIGH, published 2026-10-27): golang.org/x/net below 0.62.0 is in the vulnerable range; fixed in 0.62.0 (its go.mod needs go 1.26.0 and moves x/crypto to 0.58.0, x/sys 0.49.0, x/term 0.47.0, x/text 0.43.0). Portainer 2.45.3's go.mod requires 0.60.0 itself, which this floor's previous value v0.60.0 (2026-10-10, the HTTP/2 fixes GO-2026-6603/6610/6611/6612/6617) left in place: ReadyStack's daily scan of the live release 2.45.3-CE-ubuntu24.04-r1 (2026-11-06, scripts/scan-inventory.py: syft 1.54.1 + grype 0.120.1) found 0.60.0 in /usr/local/bin/portainer."
+    },
+    {
+      "module": "github.com/moby/buildkit",
+      "to": "v0.28.1",
+      "why": "CVE-2026-33747 (GHSA-4c29-8rgm-jvjj, HIGH 8.4) and CVE-2026-33748 (GHSA-4vrq-3vrq-g6gg, HIGH). Portainer 2.45.2 links 0.25.1 through compose v2.40.3 -> buildx v0.29.1. 0.28.1 is the FIRST release with either fix: v0.25.2 (2025-11-05), v0.26.3 (2025-12-16) and v0.27.1 (2026-01-28) all predate the 2026-03-25 fix and both advisories list < 0.28.1 with no backport. 0.28.1 breaks only compose v2.40.3 (authprovider ConfigFile field removed in buildkit 339740431f8a), fixed by the ReadyStackFree/compose replace; buildkit itself stays pristine upstream. Its go.mod asks for docker/cli v29.2.1; the docker/cli replace holds the v28 API. 0.31.1 (also fixes MEDIUM CVE-2026-61711 and LOW CVE-2026-61712) was tested 2026-10-10 and does not compile: it removed util/tracing/env, which compose v2.40.3 internal/tracing imports."
+    },
+    {
+      "module": "github.com/containerd/containerd/v2",
+      "to": "v2.2.10",
+      "why": "GHSA-7jxh-36q5-gcqv, GHSA-p7v4-vr35-mj6f, GHSA-pg57-6jwg-q645, GHSA-rp3h-jf77-q9p4: github.com/containerd/containerd/v2 v2.2.5 -> 2.2.9; RAISED to v2.2.10 (2026-11-22): CVE-2026-95839 (GHSA-vwhp-8p66-mq4f, HIGH, detected 2026-11-20 on the live 2.45.3-CE-ubuntu24.04-r3) is fixed in 2.2.10 (released 2026-10-13, go 1.25.0); Portainer 2.45.4's go.mod still requires v2.2.5"
+    },
+    {
+      "module": "github.com/klauspost/compress",
+      "to": "v1.20.2",
+      "why": "GO-2026-6865: github.com/klauspost/compress v1.18.7 -> v1.20.2 (scripts/cve-floor.py)"
+    }
+  ],
+  "expected_residuals": [],
+  "images": [
+    {
+      "digest": "sha256:dc40a13b61304647ed7e5d581d246b86413dfc29d63c6d018310feb93cd98fc0",
+      "ref": "golang:1.26.11-bookworm",
+      "role": "builder"
+    },
+    {
+      "digest": "sha256:dc40a13b61304647ed7e5d581d246b86413dfc29d63c6d018310feb93cd98fc0",
+      "ref": "golang:1.26.11-bookworm",
+      "role": "offline_builder"
+    },
+    {
+      "digest": "sha256:9c7f200c07e3d4a03e7249d2c16bf66a51120fb876aa2242cf31451412543289",
+      "ref": "ubuntu:24.04",
+      "role": "base"
+    }
+  ],
+  "mod_replaces": [
+    {
+      "new": "github.com/ReadyStackFree/go-archive",
+      "old": "github.com/moby/go-archive",
+      "version": "v0.3.0-cve-r1",
+      "why": "CVE-2026-17106 (HIGH, path traversal in tar extraction, GHSA-hfg8-hc9c-6c3h). ReadyStack backport fork: upstream v0.3.0 carries the complete fix (PR #45) but dropped the deprecated root-level compression aliases after v0.1.0, and docker/cli still calls archive.Gzip (cli/command/image/build/context.go) - docker/cli pins go-archive v0.2.0 even at its newest v29.6.0, so NO upstream combination gives both fix and API. Our fork = upstream v0.3.0 UNMODIFIED plus a ~25-line file restoring those deprecated type/const aliases verbatim from v0.1.0. No security logic touched. Verified: go build + root/compression/chrootarchive tests pass; the only failures (overlayfs TestOverlayTar*) fail identically on pristine upstream v0.3.0. Portainer 2.45.0 compiles clean against it. Fork commit db33272, tag 471f976f. Retire this replace when docker/cli adopts go-archive >=0.3.0."
+    },
+    {
+      "commit": "befa7a3f9bb8d55d4bcef2deaaa98787305bb207",
+      "new": "github.com/ReadyStackFree/cli",
+      "old": "github.com/docker/cli",
+      "version": "v28.5.2-cve-r2+incompatible",
+      "why": "CVE-2025-15558 (GHSA-p436-gjf2-799p, HIGH, CVSS4 7.0: CLI plugin search path on Windows). Fixed upstream only in v29.2.0, by commit 13759330 (cli-plugins/manager: remove legacy system-wide cli-plugin path; one line in manager_windows.go). Every v29 release moved the client API to github.com/moby/moby/{client,api}: Portainer 2.45.2's own pkg/libstack/swarm and buildx v0.29.1 pass dockerCLI.Client() as a github.com/docker/docker client, so v29 does not compile (chain 505), and no v28.x release carries the fix (v28.5.2, 2025-11-05, is the last). Fork = upstream v28.5.2 (ecc69426) + that commit applied unchanged; manager_windows.go is byte-identical to v29.2.0's (blob b42b713e). The Linux build of the module compiles the same code as before; the fix is in its Windows build. CONTROL 2026-10-10 (pristine v28.5.2 vs fork, same golang container): go test ./cli-plugins/... identical (all ok); GOOS=windows vet, test build and ./cmd/docker build identical (ok). This replace also overrides the docker/cli v29.2.1 that buildkit 0.28.1 requires. go.sum h1:seJimHWBTnV/VSrzgJAvDoDW4WfIACgIjBC2SdBwYFI= (go.mod h1:PumRSACRv5cKyJ6wEhcqm7V1s0Gn7fIalOXIJkeBwBc=). Source: runstate/held-auto/portainer-fork-cli-v28.5.2-cve-r1.patch; local fork commit 00fedb16, signed tag SHA: . Retire when Portainer moves to docker/cli >= v29.2.0. Signed tag v28.5.2-cve-r2 (GitHub-verified; r1 on the same commit has an unverifiable tagger email and is immutable), commit befa7a3f9bb8d55d4bcef2deaaa98787305bb207, pushed 2026-10-10."
+    },
+    {
+      "commit": "1b0df585b49e8d0d183e768d3a79e67715c14498",
+      "new": "github.com/ReadyStackFree/compose/v2",
+      "old": "github.com/docker/compose/v2",
+      "version": "v2.40.3-cve-r1",
+      "why": "Enables the buildkit 0.28.1 fix (CVE-2026-33747, CVE-2026-33748). compose v2.40.3 is the last github.com/docker/compose/v2 release (the next, v5, is a new module path Portainer does not import) and it sets authprovider.DockerAuthProviderConfig.ConfigFile, which buildkit 339740431f8a removed (first released in 0.27.0), so no compose/v2 release compiles against a fixed buildkit. Fork = upstream v2.40.3 (49b1c1e9) + one line in pkg/compose/build.go, `ConfigFile: s.configFile()` -> `AuthConfigProvider: authprovider.LoadAuthConfig(s.configFile())` (BuildKit's own adapter from the same commit, the call buildx uses) + go.mod requiring buildkit v0.28.1. No security logic touched; buildkit stays pristine upstream, so Scout keeps matching buildkit's own advisories. CONTROL 2026-10-10 (pristine vs fork, same container): go test ./pkg/compose/... ./pkg/api/... ./cmd/compose/... ./cmd/formatter/... identical (5/5 packages ok, 44/44 pkg/compose tests pass); a credential test through toBuildOptions' BuildKit auth session (Docker Hub host mapping, user/password, identity token, unknown host, cached second call) returns identical results. go.sum h1:w23LMLj2YGsdD0G3HZoeXQIPDr4SQrInokk1gL6rFlM= (go.mod h1:K+tSjWb6YqQhE1eqpLmW5Xitidt0DUAcm6P1oo7RktM=). Source: runstate/held-auto/portainer-fork-compose-v2.40.3-cve-r1.patch; local fork commit f7b09184, signed tag SHA: . Retire when Portainer leaves compose/v2. Signed tag v2.40.3-cve-r1 (GitHub-verified), commit 1b0df585b49e8d0d183e768d3a79e67715c14498, pushed 2026-10-10."
+    }
+  ],
+  "runtime_base": {
+    "kind": "chisel",
+    "shell": true
+  },
+  "schema": "kitforge.toolchain_lock.v1",
+  "slug": "portainer",
+  "source": {
+    "build_env": {
+      "CGO_ENABLED": "0",
+      "GOARCH": "amd64",
+      "GOFLAGS": "-buildvcs=false",
+      "GOOS": "linux",
+      "GOTOOLCHAIN": "local",
+      "GOWORK": "off"
+    },
+    "builder_image": "golang:1.26.11-bookworm",
+    "commit": "505380c8eecff08cf513c457494bde91634db9ff",
+    "commit_epoch": 1795032775,
+    "git_sha": "90a3374c",
+    "go_module_root": "github.com/portainer/portainer",
+    "go_version_required": "1.26.10",
+    "multi_module": false,
+    "ref": "2.45.4",
+    "repo": "https://github.com/portainer/portainer",
+    "source_date_epoch": 1795071769,
+    "source_date_epoch_basis": "release-cut",
+    "source_date_epoch_provenance": "the time release 2.45.4-CE-ubuntu24.04-r1 was cut (2026-11-19T07:02:49Z), by scripts/retarget.py: ReadyStack dates an image by when its release was packaged (owner 2026-11-10), recorded here once and used by every rebuild of the release; it builds upstream commit 505380c8eecf, dated 2026-11-18T20:12:55Z (source.commit_epoch).",
+    "vendor_build": {
+      "cmds": [
+        "export COREPACK_ENABLE_DOWNLOAD_PROMPT=0 NODE_OPTIONS=--max-old-space-size=6144 NODE_ENV=production",
+        "corepack enable",
+        "pnpm install",
+        "pnpm run build --config webpack/webpack.production.js",
+        "test -f dist/public/index.html && echo 'portainer frontend build present'"
+      ],
+      "node_dist": {
+        "sha256": "c54118104acc524633b5abe106bbf44a53126ec8b4e5fa105cb92b5d7de8a1a1",
+        "version": "22.23.5"
+      },
+      "node_version": "22",
+      "tooling": [
+        "nodejs",
+        "pnpm"
+      ]
+    }
+  },
+  "version": "2.45.4"
+}
